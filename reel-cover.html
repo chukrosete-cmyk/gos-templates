@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reel Cover · 5 señales</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: #1c1a17;
+    font-family: var(--gos-font-sans);
+    min-height: 100vh;
+  }
+
+  /* Stage */
+  .stage {
+    width: 100%;
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .frame-wrap {
+    width: 360px;
+    height: 640px;
+    position: relative;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    transform-origin: top left;
+    transform: scale(0.333333);
+    width: 1080px;
+    height: 1920px;
+    background: var(--gos-negro);
+    overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0,0,0,0.65);
+  }
+
+  /* Photo background */
+  .photo-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('photos/IMG_2669.jpg');
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .photo-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg,
+        rgba(10,8,5,0.6) 0%,
+        rgba(10,8,5,0) 18%,
+        rgba(10,8,5,0) 38%,
+        rgba(10,8,5,0.85) 78%,
+        rgba(10,8,5,0.98) 100%);
+    z-index: 1;
+  }
+
+  /* Top brand label */
+  .top {
+    position: absolute;
+    top: 96px; left: 80px;
+    display: flex; align-items: center; gap: 16px;
+    z-index: 5;
+  }
+  .top .dash {
+    width: 36px; height: 1.5px;
+    background: var(--gos-gold);
+  }
+  .top .label {
+    font-family: var(--gos-font-mono);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--gos-gold);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+
+  /* Top right number badge */
+  .badge {
+    position: absolute;
+    top: 96px; right: 80px;
+    z-index: 5;
+    font-family: var(--gos-font-mono);
+    font-size: 18px;
+    color: var(--gos-gold);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    border: 1.5px solid var(--gos-gold);
+    padding: 8px 14px;
+    border-radius: 3px;
+    background: rgba(10,8,5,0.4);
+  }
+
+  /* Big ghost number behind photo (top-right area) */
+  .ghost-5 {
+    position: absolute;
+    top: 240px;
+    right: -120px;
+    font-family: var(--gos-font-mono);
+    font-weight: 700;
+    font-size: 760px;
+    line-height: 0.78;
+    color: rgba(201,168,76,0.08);
+    letter-spacing: -0.05em;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Bottom caption stack */
+  .caption {
+    position: absolute;
+    bottom: 230px;
+    left: 80px;
+    right: 80px;
+    z-index: 5;
+    color: #fff;
+  }
+  .caption .eyebrow {
+    font-family: var(--gos-font-mono);
+    font-size: 24px;
+    color: var(--gos-gold);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin: 0 0 22px;
+  }
+  .caption h1 {
+    font-family: var(--gos-font-display);
+    font-weight: 800;
+    font-size: 178px;
+    line-height: 0.86;
+    text-transform: uppercase;
+    letter-spacing: -0.014em;
+    margin: 0;
+  }
+  .caption h1 .white { color: #fff; }
+  .caption h1 .gold  { color: var(--gos-gold); }
+  .caption h1 .small { font-size: 96px; display: block; margin-top: 10px; font-weight: 700; }
+  .caption .dash {
+    width: 80px; height: 3px;
+    background: var(--gos-gold);
+    margin: 32px 0 22px;
+  }
+  .caption p {
+    font-family: var(--gos-font-sans);
+    font-weight: 400;
+    font-size: 30px;
+    color: rgba(255,255,255,0.78);
+    line-height: 1.4;
+    max-width: 820px;
+    margin: 0;
+  }
+
+  /* Bottom brand bar */
+  .footer {
+    position: absolute;
+    bottom: 96px; left: 80px; right: 80px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 5;
+  }
+  .footer .left {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .footer .left img { width: 36px; height: 36px; }
+  .footer .left .text {
+    font-family: var(--gos-font-mono);
+    font-size: 18px;
+    color: var(--gos-gold);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+  }
+  .footer .right {
+    font-family: var(--gos-font-mono);
+    font-size: 18px;
+    color: var(--gos-gold);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  /* Page label */
+  .page-label {
+    position: fixed;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    font-family: var(--gos-font-mono);
+    font-size: 10px;
+    color: var(--gos-gold);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: rgba(20,18,16,0.92);
+    border: 1px solid rgba(201,168,76,0.18);
+    border-radius: 999px;
+    padding: 8px 14px;
+  }
+  .page-label .sep { opacity: 0.4; margin: 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="page-label">Reel Cover <span class="sep">·</span> 1080 × 1920 <span class="sep">·</span> escala 0.33</div>
+
+<div class="stage">
+  <div class="frame-wrap">
+    <div class="frame">
+
+      <div class="photo-bg"></div>
+      <div class="photo-overlay"></div>
+
+      <span class="ghost-5">5</span>
+
+      <div class="top">
+        <span class="dash"></span>
+        <span class="label">Chuck Ross · GOS™</span>
+      </div>
+
+      <div class="badge">SEÑALES · 05</div>
+
+      <div class="caption">
+        <p class="eyebrow">Diagnóstico operativo</p>
+        <h1>
+          <span class="white">5 señales</span>
+          <span class="small white">de que tu negocio</span>
+          <span class="gold">te frena.</span>
+        </h1>
+        <div class="dash"></div>
+        <p>Si reconoces 3 de las 5,<br>ya no es opcional.</p>
+      </div>
+
+      <div class="footer">
+        <div class="left">
+          <img src="../../assets/GOS_Symbol_512_Transparent.png" alt="">
+          <span class="text">Arquitecto de sistemas</span>
+        </div>
+        <span class="right">@chuckrossmx</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function scale() {
+    const wrap = document.querySelector('.frame-wrap');
+    const frame = document.querySelector('.frame');
+    const w = wrap.clientWidth;
+    const k = w / 1080;
+    frame.style.transform = 'scale(' + k + ')';
+    wrap.style.height = (1920 * k) + 'px';
+  }
+  scale();
+  window.addEventListener('resize', scale);
+})();
+</script>
+
+</body>
+</html>
