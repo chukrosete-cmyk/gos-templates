@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Carrusel · 5 señales</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: #1c1a17;
+    font-family: var(--gos-font-sans);
+    color: var(--gos-text-near);
+    min-height: 100vh;
+  }
+
+  /* =============== NAV CHROME =============== */
+  .ctrl {
+    position: fixed;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(20,18,16,0.92);
+    border: 1px solid rgba(201,168,76,0.18);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-family: var(--gos-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--gos-gold);
+    text-transform: uppercase;
+  }
+  .ctrl button {
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gos-gold);
+    font-family: var(--gos-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: opacity 160ms ease-out;
+  }
+  .ctrl button:hover { opacity: 0.85; }
+  .ctrl .count { color: rgba(201,168,76,0.65); padding: 0 8px; }
+  .ctrl .sep { opacity: 0.4; }
+
+  /* =============== STAGE =============== */
+  .stage {
+    width: 100%;
+    min-height: 100vh;
+    padding: 64px 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .frame-wrap {
+    width: 540px;
+    height: 540px;
+    position: relative;
+  }
+  .frame {
+    position: absolute;
+    inset: 0;
+    transform-origin: top left;
+    transform: scale(0.5);
+    width: 1080px;
+    height: 1080px;
+    background: var(--gos-negro);
+    box-shadow: 0 30px 90px rgba(0,0,0,0.65);
+    overflow: hidden;
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: 1080px; height: 1080px;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: none;
+  }
+  .slide.active { display: block; }
+
+  /* =============== WATERMARK (GOS symbol) =============== */
+  .watermark {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.07;
+    filter: grayscale(0.2);
+  }
+  .watermark.gold {
+    /* tint to gold via mix-blend-mode + filter trick */
+    mix-blend-mode: screen;
+    opacity: 0.085;
+  }
+
+  /* =============== BRILLOS (glints) =============== */
+  .glint {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(232,201,122,0.85) 0%, rgba(201,168,76,0.4) 30%, transparent 70%);
+    box-shadow: 0 0 24px rgba(232,201,122,0.5), 0 0 6px rgba(232,201,122,0.9);
+  }
+  .glint::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, transparent 45%, rgba(255,238,180,0.7) 50%, transparent 55%),
+      linear-gradient(0deg, transparent 45%, rgba(255,238,180,0.7) 50%, transparent 55%);
+    transform: scale(2.5);
+    opacity: 0.7;
+  }
+  .glint.sm { width: 5px; height: 5px; }
+  .glint.md { width: 8px; height: 8px; }
+  .glint.lg { width: 12px; height: 12px; }
+
+  /* =============== VERTICAL TAPE (left edge) =============== */
+  .v-tape {
+    position: absolute;
+    top: 96px;
+    bottom: 96px;
+    left: 56px;
+    width: 32px;
+    display: flex;
+    align-items: flex-start;
+    z-index: 6;
+  }
+  .v-tape span {
+    font-family: var(--gos-font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: var(--gos-gold);
+    opacity: 0.65;
+    white-space: nowrap;
+  }
+
+  /* =============== BIG SEÑAL NUMBER (corner) =============== */
+  .signal-corner {
+    position: absolute;
+    top: 80px; right: 64px;
+    z-index: 6;
+    text-align: right;
+  }
+  .signal-corner .lbl {
+    font-family: var(--gos-font-mono);
+    font-size: 13px;
+    color: var(--gos-gold);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin: 0 0 -8px;
+    opacity: 0.85;
+  }
+  .signal-corner .num {
+    font-family: var(--gos-font-mono);
+    font-weight: 700;
+    font-size: 120px;
+    color: var(--gos-gold);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    margin: 0;
+  }
+  .signal-corner .dash {
+    display: block;
+    width: 44px; height: 2px;
+    background: var(--gos-gold);
+    margin-left: auto;
+    margin-top: 6px;
+  }
+  .signal-corner .total {
+    font-family: var(--gos-font-mono);
+    font-size: 11px;
+    color: rgba(201,168,76,0.55);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .slide.editorial .signal-corner .lbl,
+  .slide.editorial .signal-corner .num,
+  .slide.editorial .signal-corner .dash { color: var(--gos-gold-deep); background: var(--gos-gold-deep); }
+  .slide.editorial .signal-corner .num { background: transparent; }
+  .slide.editorial .signal-corner .total { color: var(--gos-text-secondary); }
+
+  /* =============== BOTTOM BRAND BAR =============== */
+  .brand-bar {
+    position: absolute;
+    bottom: 56px; left: 56px; right: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 6;
+  }
+  .brand-bar .left {
+    font-family: var(--gos-font-mono);
+    font-size: 12px;
+    color: var(--gos-gold);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .brand-bar .left .sep { color: rgba(201,168,76,0.35); margin: 0 8px; }
+  .dots {
+    display: flex; gap: 5px;
+  }
+  .dots .d {
+    width: 10px; height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 1px;
+    transition: background 200ms, width 200ms;
+  }
+  .dots .d.active {
+    width: 24px;
+    background: var(--gos-gold);
+  }
+  .slide.editorial .brand-bar .left { color: var(--gos-gold-deep); }
+  .slide.editorial .brand-bar .left .sep { color: rgba(122,94,26,0.35); }
+  .slide.editorial .dots .d { background: rgba(122,94,26,0.2); }
+  .slide.editorial .dots .d.active { background: var(--gos-gold-deep); }
+
+  /* =============== PHOTO SLIDES =============== */
+  .photo-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .photo-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(10,8,5,0.65) 0%, rgba(10,8,5,0.18) 20%, rgba(10,8,5,0) 35%, rgba(10,8,5,0) 50%, rgba(10,8,5,0.92) 85%, rgba(10,8,5,0.99) 100%);
+    z-index: 1;
+  }
+  .photo-grade {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 70%, rgba(201,168,76,0.06) 0%, transparent 50%);
+    z-index: 2;
+    mix-blend-mode: screen;
+  }
+
+  /* photo caption — bottom area */
+  .photo-caption {
+    position: absolute;
+    left: 56px;
+    right: 56px;
+    bottom: 130px;
+    z-index: 5;
+    color: #fff;
+  }
+  .photo-caption .kicker {
+    font-family: var(--gos-font-mono);
+    font-size: 13px;
+    color: var(--gos-gold);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+  }
+  .photo-caption h1 {
+    font-family: var(--gos-font-display);
+    font-weight: 700;
+    font-size: 88px;
+    line-height: 0.95;
+    color: #fff;
+    letter-spacing: -0.005em;
+    margin: 0;
+    text-transform: none;
+  }
+  .photo-caption h1 .punto { color: var(--gos-gold); }
+  .photo-caption h1 em { font-style: italic; font-weight: 300; color: rgba(255,255,255,0.85); }
+  .photo-caption .dash {
+    width: 56px; height: 2px;
+    background: var(--gos-gold);
+    margin: 22px 0 14px;
+  }
+  .photo-caption p {
+    font-family: var(--gos-font-sans);
+    font-weight: 300;
+    font-size: 21px;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.45;
+    max-width: 720px;
+    margin: 0;
+  }
+
+  /* =============== SLIDE 01 · HOOK (SOLID DARK) =============== */
+  .s1 { background: var(--gos-negro); color: #fff; }
+  .s1 .watermark {
+    width: 880px; height: 880px;
+    bottom: -180px; right: -200px;
+  }
+  .s1 .center-block {
+    position: absolute;
+    inset: 280px 56px 200px 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 5;
+  }
+  .s1 .center-block .kicker {
+    font-family: var(--gos-font-mono);
+    font-size: 14px;
+    color: var(--gos-gold);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    margin: 0 0 24px;
+  }
+  .s1 .center-block h1 {
+    font-family: var(--gos-font-display);
+    font-weight: 700;
+    font-size: 108px;
+    line-height: 0.94;
+    color: #fff;
+    letter-spacing: -0.005em;
+    margin: 0;
+    text-transform: none;
+  }
+  .s1 .center-block h1 .g { color: var(--gos-gold); }
+  .s1 .center-block h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: rgba(255,255,255,0.7);
+  }
+  .s1 .center-block .dash {
+    width: 80px; height: 2px;
+    background: var(--gos-gold);
+    margin: 32px 0 22px;
+  }
+  .s1 .center-block p {
+    font-family: var(--gos-font-sans);
+    font-weight: 300;
+    font-size: 22px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.5;
+    max-width: 660px;
+    margin: 0;
+  }
+  .s1 .swipe {
+    position: absolute;
+    bottom: 130px; right: 56px;
+    z-index: 6;
+    font-family: var(--gos-font-mono);
+    font-size: 12px;
+    color: var(--gos-gold);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* =============== SLIDE 03 · SEÑAL 02 (EDITORIAL) =============== */
+  .s3 { background: var(--gos-fondo); color: var(--gos-text-near); }
+  .s3 .watermark {
+    width: 760px; height: 760px;
+    bottom: -120px; right: -180px;
+    opacity: 0.06;
+  }
+  .s3 .content {
+    position: absolute;
+    top: 250px; left: 130px; right: 56px;
+    z-index: 5;
+  }
+  .s3 .kicker {
+    font-family: var(--gos-font-mono);
+    font-size: 13px;
+    color: var(--gos-gold-deep);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    margin: 0 0 16px;
+  }
+  .s3 h1 {
+    font-family: var(--gos-font-display);
+    font-weight: 700;
+    font-size: 88px;
+    line-height: 0.95;
+    color: var(--gos-text-near);
+    letter-spacing: -0.005em;
+    margin: 0;
+    text-transform: none;
+  }
+  .s3 h1 em { font-style: italic; font-weight: 300; color: var(--gos-gold-deep); }
+  .s3 h1 .punto { color: var(--gos-gold-deep); }
+  .s3 .dash {
+    width: 56px; height: 2px;
+    background: var(--gos-gold-deep);
+    margin: 22px 0 18px;
+  }
+  .s3 .lede {
+    font-family: var(--gos-font-sans);
+    font-weight: 400;
+    font-size: 21px;
+    color: var(--gos-text-body);
+    line-height: 1.55;
+    max-width: 660px;
+    margin: 0 0 40px;
+  }
+  .chat-list {
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 720px;
+  }
+  .chat-row {
+    display: flex; align-items: baseline; gap: 18px;
+    padding: 14px 20px;
+    background: rgba(201,168,76,0.05);
+    border-left: 2px solid var(--gos-gold);
+  }
+  .chat-row .stamp {
+    font-family: var(--gos-font-mono);
+    font-size: 11px;
+    color: var(--gos-gold-deep);
+    letter-spacing: 0.18em;
+    min-width: 82px;
+    text-transform: uppercase;
+  }
+  .chat-row .text {
+    font-family: var(--gos-font-sans);
+    font-size: 19px;
+    color: var(--gos-text-near);
+    font-weight: 500;
+  }
+  .chat-row.dim { opacity: 0.55; }
+  .chat-row.dimmer { opacity: 0.3; }
+
+  /* =============== SLIDE 05 · SEÑAL 04 (SOLID DARK + DATO) =============== */
+  .s5 { background: var(--gos-negro); color: #fff; }
+  .s5 .watermark {
+    width: 900px; height: 900px;
+    top: -120px; left: -220px;
+  }
+  .s5 .content {
+    position: absolute;
+    inset: 250px 56px 200px 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 5;
+  }
+  .s5 .kicker {
+    font-family: var(--gos-font-mono);
+    font-size: 13px;
+    color: var(--gos-gold);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    margin: 0 0 26px;
+  }
+  .s5 .big-data {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+  .s5 .big-data .n {
+    font-family: var(--gos-font-mono);
+    font-weight: 700;
+    font-size: 220px;
+    color: var(--gos-gold-light);
+    line-height: 0.88;
+    letter-spacing: -0.05em;
+  }
+  .s5 .big-data .unit {
+    display: flex; flex-direction: column;
+    gap: 4px;
+    padding-bottom: 16px;
+  }
+  .s5 .big-data .unit .top-u {
+    font-family: var(--gos-font-mono);
+    font-size: 24px;
+    color: var(--gos-gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .s5 .big-data .unit .vs {
+    font-family: var(--gos-font-mono);
+    font-size: 15px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .s5 h1 {
+    font-family: var(--gos-font-display);
+    font-weight: 700;
+    font-size: 88px;
+    line-height: 0.95;
+    color: #fff;
+    letter-spacing: -0.005em;
+    margin: 0;
+    text-transform: none;
+  }
+  .s5 h1 em { font-style: italic; font-weight: 300; color: rgba(255,255,255,0.8); }
+  .s5 h1 .g { color: var(--gos-gold); }
+  .s5 .dash {
+    width: 56px; height: 2px;
+    background: var(--gos-gold);
+    margin: 22px 0 16px;
+  }
+  .s5 p {
+    font-family: var(--gos-font-sans);
+    font-weight: 300;
+    font-size: 21px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+    max-width: 720px;
+    margin: 0;
+  }
+
+  /* =============== SLIDE 07 · CTA (SOLID DARK) =============== */
+  .s7 { background: var(--gos-negro); color: #fff; }
+  .s7 .watermark {
+    width: 1000px; height: 1000px;
+    top: -160px; right: -260px;
+    opacity: 0.06;
+  }
+  .s7 .glow-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(201,168,76,0.10) 0%, transparent 60%);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .s7 .center-block {
+    position: absolute;
+    inset: 220px 56px 180px 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 5;
+  }
+  .s7 .kicker {
+    font-family: var(--gos-font-mono);
+    font-size: 13px;
+    color: var(--gos-gold);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    margin: 0 0 22px;
+  }
+  .s7 h1 {
+    font-family: var(--gos-font-display);
+    font-weight: 700;
+    font-size: 96px;
+    line-height: 0.95;
+    color: #fff;
+    letter-spacing: -0.005em;
+    margin: 0;
+    text-transform: none;
+  }
+  .s7 h1 em { font-style: italic; font-weight: 300; color: rgba(255,255,255,0.8); }
+  .s7 h1 .g { color: var(--gos-gold); }
+  .s7 .dash {
+    width: 56px; height: 2px;
+    background: var(--gos-gold);
+    margin: 22px 0 22px;
+  }
+  .s7 .lede {
+    font-family: var(--gos-font-sans);
+    font-weight: 300;
+    font-size: 21px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.55;
+    max-width: 700px;
+    margin: 0 0 44px;
+  }
+  .s7 .actions { display: flex; flex-direction: column; gap: 12px; }
+  .s7 .actions .row { display: flex; align-items: center; gap: 18px; }
+  .s7 .actions .num {
+    font-family: var(--gos-font-mono);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--gos-gold);
+    letter-spacing: 0.24em;
+    border: 1.5px solid var(--gos-gold);
+    padding: 6px 10px;
+    border-radius: 2px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .s7 .actions .label {
+    font-family: var(--gos-font-sans);
+    font-weight: 500;
+    font-size: 22px;
+    color: #fff;
+  }
+  .s7 .actions .label .g { color: var(--gos-gold); }
+  .s7 .handle {
+    position: absolute;
+    bottom: 130px; right: 56px;
+    font-family: var(--gos-font-mono);
+    font-size: 13px;
+    color: var(--gos-gold);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    z-index: 6;
+  }
+
+</style>
+
+<style id="__export_overrides">
+  html, body {
+    margin: 0 !important; padding: 0 !important;
+    background: #0A0805 !important;
+    overflow: visible !important;
+  }
+  body { display: block !important; }
+  .ctrl { display: none !important; }
+  .stage {
+    margin: 0 !important; padding: 0 !important;
+    width: 1080px !important;
+    min-height: 0 !important;
+    display: block !important;
+    position: static !important;
+  }
+  .frame-wrap {
+    width: 1080px !important;
+    height: auto !important;
+    margin: 0 !important;
+    position: static !important;
+    display: block !important;
+  }
+  .frame {
+    position: static !important;
+    inset: auto !important;
+    width: 1080px !important;
+    height: auto !important;
+    transform: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    display: block !important;
+    background: transparent !important;
+  }
+  .slide {
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
+    width: 1080px !important;
+    height: 1080px !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    clip-path: inset(0) !important;
+    contain: strict !important;
+  }
+  .slide.active { display: block !important; }
+</style>
+</head>
+<body>
+
+<div class="ctrl">
+  <button id="prev">← Prev</button>
+  <span class="count" id="count">1 / 7</span>
+  <button id="next">Next →</button>
+  <span class="sep">·</span>
+  <span>1080×1080 · escala 0.5</span>
+</div>
+
+<div class="stage">
+  <div class="frame-wrap">
+    <div class="frame">
+
+      <!-- ================== SLIDE 1 · HOOK ================== -->
+      <div class="slide s1 " data-i="0" data-export-slide="1">
+        <img class="watermark gold" src="../../assets/GOS_Symbol_512_Transparent.png" alt="">
+
+        <div class="v-tape"><span>Diagnóstico · 05 señales · Chuck Ross</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">Doc / 01</p>
+          <p class="num">05</p>
+          <span class="dash"></span>
+          <p class="total">señales críticas</p>
+        </div>
+
+        <div class="center-block">
+          <p class="kicker">— Si reconoces 3 de 5</p>
+          <h1>
+            5 señales<br>
+            de que tu negocio<br>
+            <em>necesita</em> <span class="g">un sistema.</span>
+          </h1>
+          <div class="dash"></div>
+          <p>Cinco síntomas operativos.<br>Tres minutos. Guarda para después.</p>
+        </div>
+
+        <span class="glint md" style="top: 220px; right: 280px;"></span>
+        <span class="glint sm" style="top: 580px; left: 380px;"></span>
+        <span class="glint lg" style="bottom: 340px; right: 220px;"></span>
+        <span class="glint sm" style="top: 410px; right: 80px;"></span>
+
+        <div class="swipe"><span>Desliza</span><span>→</span></div>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d active"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SLIDE 2 · SEÑAL 01 (PHOTO) ================== -->
+      <div class="slide s2" data-i="1" data-export-slide="2">
+        <div class="photo-bg" style="background-image: url('photos/IMG_2671.jpg');"></div>
+        <div class="photo-overlay"></div>
+        <div class="photo-grade"></div>
+
+        <img class="watermark gold" src="../../assets/GOS_Symbol_512_Transparent.png" alt=""
+             style="width:380px; height:380px; bottom:-60px; right:-80px; opacity:0.10;">
+
+        <div class="v-tape"><span>Señal · 01 / 05 · Dependencia</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">SEÑAL</p>
+          <p class="num">01</p>
+          <span class="dash"></span>
+          <p class="total">de 5</p>
+        </div>
+
+        <div class="photo-caption">
+          <p class="kicker">— Dependencia operativa</p>
+          <h1>Todo depende<br>de que tú estés<br>presente<span class="punto">.</span></h1>
+          <div class="dash"></div>
+          <p>Si te enfermas hoy, ¿qué pasa con tu negocio?<br><em style="font-style:italic;opacity:0.65;">— Esa respuesta es el diagnóstico.</em></p>
+        </div>
+
+        <span class="glint sm" style="top: 280px; left: 380px;"></span>
+        <span class="glint md" style="top: 520px; right: 180px;"></span>
+        <span class="glint sm" style="top: 130px; right: 320px;"></span>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d"></span><span class="d active"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SLIDE 3 · SEÑAL 02 (EDITORIAL) ================== -->
+      <div class="slide s3 editorial" data-i="2" data-export-slide="3">
+        <img class="watermark" src="../../assets/GOS_Symbol_512_Transparent.png" alt=""
+             style="opacity:0.05;">
+
+        <div class="v-tape"><span style="color:var(--gos-gold-deep);">Señal · 02 / 05 · Repetición</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">SEÑAL</p>
+          <p class="num">02</p>
+          <span class="dash"></span>
+          <p class="total">de 5</p>
+        </div>
+
+        <div class="content">
+          <p class="kicker">— Repetición silenciosa</p>
+          <h1>Respondes los<br>mismos mensajes<br><em>todos</em> los días<span class="punto">.</span></h1>
+          <div class="dash"></div>
+          <p class="lede">Lo que se repite, se documenta. Lo que se documenta, se automatiza. Lo que se automatiza, no consume tu día.</p>
+
+          <div class="chat-list">
+            <div class="chat-row">
+              <span class="stamp">09:14 AM</span>
+              <span class="text">¿Cuánto cuesta el paquete completo?</span>
+            </div>
+            <div class="chat-row dim">
+              <span class="stamp">11:42 AM</span>
+              <span class="text">¿Cuánto cuesta el paquete completo?</span>
+            </div>
+            <div class="chat-row dimmer">
+              <span class="stamp">02:08 PM</span>
+              <span class="text">¿Cuánto cuesta el paquete completo?</span>
+            </div>
+          </div>
+        </div>
+
+        <span class="glint sm" style="top: 240px; right: 380px;"></span>
+        <span class="glint md" style="bottom: 380px; right: 180px;"></span>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d"></span><span class="d"></span><span class="d active"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SLIDE 4 · SEÑAL 03 (PHOTO) ================== -->
+      <div class="slide s4" data-i="3" data-export-slide="4">
+        <div class="photo-bg" style="background-image: url('photos/IMG_2672.jpg');"></div>
+        <div class="photo-overlay"></div>
+        <div class="photo-grade"></div>
+
+        <img class="watermark gold" src="../../assets/GOS_Symbol_512_Transparent.png" alt=""
+             style="width:380px; height:380px; bottom:-60px; left:-80px; opacity:0.10;">
+
+        <div class="v-tape"><span>Señal · 03 / 05 · Sin claridad</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">SEÑAL</p>
+          <p class="num">03</p>
+          <span class="dash"></span>
+          <p class="total">de 5</p>
+        </div>
+
+        <div class="photo-caption">
+          <p class="kicker">— Sin claridad financiera</p>
+          <h1>No sabes cuánto<br>entra ni de<br>dónde<span class="punto">.</span></h1>
+          <div class="dash"></div>
+          <p>Sin visibilidad no hay estrategia.<br><em style="font-style:italic;opacity:0.65;">— Y la intuición no escala.</em></p>
+        </div>
+
+        <span class="glint md" style="top: 260px; left: 320px;"></span>
+        <span class="glint sm" style="top: 180px; right: 220px;"></span>
+        <span class="glint sm" style="bottom: 500px; right: 380px;"></span>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d"></span><span class="d"></span><span class="d"></span><span class="d active"></span><span class="d"></span><span class="d"></span><span class="d"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SLIDE 5 · SEÑAL 04 (SOLID DARK + DATO) ================== -->
+      <div class="slide s5" data-i="4" data-export-slide="5">
+        <img class="watermark gold" src="../../assets/GOS_Symbol_512_Transparent.png" alt="">
+
+        <div class="v-tape"><span>Señal · 04 / 05 · Trampa</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">SEÑAL</p>
+          <p class="num">04</p>
+          <span class="dash"></span>
+          <p class="total">de 5</p>
+        </div>
+
+        <div class="content">
+          <p class="kicker">— Trampa del éxito</p>
+          <div class="big-data">
+            <span class="n">168</span>
+            <div class="unit">
+              <span class="top-u">HRS / SEMANA</span>
+              <span class="vs">0 PARA TI</span>
+            </div>
+          </div>
+          <h1>Tienes clientes,<br><em>pero no</em><br><span class="g">tiempo.</span></h1>
+          <div class="dash"></div>
+          <p>El éxito que no te deja respirar no es éxito.<br><em style="font-style:italic;opacity:0.65;">— Es esclavitud bien remunerada.</em></p>
+        </div>
+
+        <span class="glint md" style="top: 200px; right: 200px;"></span>
+        <span class="glint sm" style="top: 480px; left: 540px;"></span>
+        <span class="glint lg" style="bottom: 360px; right: 320px;"></span>
+        <span class="glint sm" style="bottom: 480px; left: 360px;"></span>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d active"></span><span class="d"></span><span class="d"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SLIDE 6 · SEÑAL 05 (PHOTO) ================== -->
+      <div class="slide s6" data-i="5" data-export-slide="6">
+        <div class="photo-bg" style="background-image: url('photos/IMG_2674.jpg');"></div>
+        <div class="photo-overlay"></div>
+        <div class="photo-grade"></div>
+
+        <img class="watermark gold" src="../../assets/GOS_Symbol_512_Transparent.png" alt=""
+             style="width:380px; height:380px; bottom:-60px; right:-80px; opacity:0.10;">
+
+        <div class="v-tape"><span>Señal · 05 / 05 · Dependencia total</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">SEÑAL</p>
+          <p class="num">05</p>
+          <span class="dash"></span>
+          <p class="total">de 5</p>
+        </div>
+
+        <div class="photo-caption">
+          <p class="kicker">— Dependencia total</p>
+          <h1>Tu negocio para<br>si <em>tú</em> paras<span class="punto">.</span></h1>
+          <div class="dash"></div>
+          <p>Esto no es éxito — es dependencia.<br><em style="font-style:italic;opacity:0.65;">— Un sistema real funciona sin ti.</em></p>
+        </div>
+
+        <span class="glint sm" style="top: 220px; left: 280px;"></span>
+        <span class="glint md" style="top: 460px; right: 380px;"></span>
+        <span class="glint sm" style="bottom: 520px; left: 480px;"></span>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d active"></span><span class="d"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== SLIDE 7 · CTA ================== -->
+      <div class="slide s7" data-i="6" data-export-slide="7">
+        <img class="watermark gold" src="../../assets/GOS_Symbol_512_Transparent.png" alt="">
+        <div class="glow-center"></div>
+
+        <div class="v-tape"><span>Cierre · 07 / 07 · GOS™ Foundation</span></div>
+
+        <div class="signal-corner">
+          <p class="lbl">CIERRE</p>
+          <p class="num">07</p>
+          <span class="dash"></span>
+          <p class="total">/ 07</p>
+        </div>
+
+        <div class="center-block">
+          <p class="kicker">— ¿Reconociste 3 o más?</p>
+          <h1>Es momento de<br><em>operar</em> con un<br><span class="g">sistema.</span></h1>
+          <div class="dash"></div>
+          <p class="lede">Diagnóstico operativo de 45 minutos. Cuáles de las 5 señales te frenan y qué se implementa primero.</p>
+
+          <div class="actions">
+            <div class="row">
+              <span class="num">01</span>
+              <span class="label">Guarda este post <span class="g">— para no perderlo</span></span>
+            </div>
+            <div class="row">
+              <span class="num">02</span>
+              <span class="label">Agenda diagnóstico <span class="g">— enlace en bio</span></span>
+            </div>
+          </div>
+        </div>
+
+        <span class="glint lg" style="top: 220px; right: 240px;"></span>
+        <span class="glint md" style="top: 480px; right: 140px;"></span>
+        <span class="glint sm" style="bottom: 420px; left: 540px;"></span>
+        <span class="glint sm" style="top: 300px; left: 320px;"></span>
+
+        <div class="handle">@chuckrossmx</div>
+
+        <div class="brand-bar">
+          <div class="left">GOS™ <span class="sep">·</span> Chuck Ross</div>
+          <div class="dots">
+            <span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d active"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const count = document.getElementById('count');
+  let cur = 0;
+  function go(i) {
+    cur = (i + slides.length) % slides.length;
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === cur));
+    count.textContent = (cur + 1) + ' / ' + slides.length;
+  }
+  document.getElementById('prev').addEventListener('click', () => go(cur - 1));
+  document.getElementById('next').addEventListener('click', () => go(cur + 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') go(cur + 1);
+    if (e.key === 'ArrowLeft')  go(cur - 1);
+  });
+  function scale() {
+    const wrap = document.querySelector('.frame-wrap');
+    const frame = document.querySelector('.frame');
+    const w = wrap.clientWidth;
+    const k = w / 1080;
+    frame.style.transform = 'scale(' + k + ')';
+    wrap.style.height = (1080 * k) + 'px';
+  }
+  scale();
+  window.addEventListener('resize', scale);
+})();
+</script>
+
+</body>
+</html>
